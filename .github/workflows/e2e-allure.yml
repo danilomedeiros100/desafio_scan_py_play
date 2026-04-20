@@ -18,10 +18,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Java (Allure CLI precisa de JRE)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -29,7 +35,7 @@ jobs:
       - name: Dependências
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Playwright (Chromium + deps do sistema)
         run: python -m playwright install --with-deps chromium
@@ -37,13 +43,16 @@ jobs:
       - name: Allure CLI
         run: |
           set -eux
-          curl -sL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" \
+          curl -fsSL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" \
             | tar -xz -C "${RUNNER_TEMP}"
-          echo "${RUNNER_TEMP}/allure-${ALLURE_VERSION}/bin" >> "${GITHUB_PATH}"
-          allure --version
+          ALLURE_BIN="${RUNNER_TEMP}/allure-${ALLURE_VERSION}/bin"
+          echo "${ALLURE_BIN}" >> "${GITHUB_PATH}"
+          # GITHUB_PATH só vale no *próximo* step; aqui precisamos exportar no mesmo job
+          echo "PATH=${ALLURE_BIN}:${PATH}" >> "${GITHUB_ENV}"
+          "${ALLURE_BIN}/allure" --version
 
       - name: Rodar testes
-        run: pytest -v --headed=false --alluredir=allure-results
+        run: python -m pytest -v --headed=false --alluredir=allure-results
 
       - name: Gerar relatório (mesmo script que no local)
         if: always()
@@ -51,16 +60,18 @@ jobs:
 
       - name: Upload do relatório HTML
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: allure-report
           path: allure-report/
+          if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload dos resultados brutos (opcional)
+      - name: Upload dos resultados brutos (debug)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: allure-results
           path: allure-results/
+          if-no-files-found: ignore
           retention-days: 7
