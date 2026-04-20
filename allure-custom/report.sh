@@ -10,6 +10,17 @@ assets_dir="${output_folder}/allure-poc-assets"
 REPORT_TITLE="ScansSource QA Report"
 PORT=8888
 
+# sed -i portável (macOS BSD vs GNU/Linux)
+_sed_i() {
+  local expr=$1
+  local file=$2
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    sed -i '' "$expr" "$file"
+  else
+    sed -i "$expr" "$file"
+  fi
+}
+
 # ── Gera o relatório ──────────────────────────────────────────────────────────
 echo "📊 Gerando relatório Allure..."
 allure generate "$results_folder" --clean -o "$output_folder"
@@ -39,24 +50,23 @@ EOF
 fi
 
 # Insere link do custom.css no <head>
-sed -i '' 's|</head>|<link rel="stylesheet" type="text/css" href="custom.css">\
+_sed_i 's|</head>|<link rel="stylesheet" type="text/css" href="custom.css">\
 </head>|' "${output_folder}/index.html"
 
 # ── Título da aba e sumário ───────────────────────────────────────────────────
-sed -i '' "s|<title>Allure Report</title>|<title>${REPORT_TITLE}</title>|" \
+_sed_i "s|<title>Allure Report</title>|<title>${REPORT_TITLE}</title>|" \
   "${output_folder}/index.html"
 
 summary="${output_folder}/widgets/summary.json"
 if [ -f "$summary" ]; then
-  sed -i '' "s/Allure Report/${REPORT_TITLE}/g" "$summary"
+  _sed_i "s|Allure Report|${REPORT_TITLE}|g" "$summary"
 fi
 
 # ── Favicon ───────────────────────────────────────────────────────────────────
 if [ -f "${custom_dir}/icone-logo.svg" ]; then
   cp "${custom_dir}/icone-logo.svg" "${assets_dir}/tab-icon.svg"
-  # Remove ícones existentes e insere o novo
-  sed -i '' 's|<link[^>]*rel="[^"]*icon[^"]*"[^>]*>||g' "${output_folder}/index.html"
-  sed -i '' 's|<head>|<head><link rel="icon" type="image/svg+xml" href="allure-poc-assets/tab-icon.svg">|' \
+  _sed_i 's|<link[^>]*rel="[^"]*icon[^"]*"[^>]*>||g' "${output_folder}/index.html"
+  _sed_i 's|<head>|<head><link rel="icon" type="image/svg+xml" href="allure-poc-assets/tab-icon.svg">|' \
     "${output_folder}/index.html"
 elif [ -f "${custom_dir}/favicon.ico" ]; then
   cp "${custom_dir}/favicon.ico" "${output_folder}/favicon.ico"
@@ -64,15 +74,23 @@ fi
 
 echo "✅ Report gerado em: ${output_folder}"
 
-# ── Servidor HTTP em background (resolve bloqueio file://) ────────────────────
-# Mata qualquer servidor anterior na mesma porta
-lsof -ti:${PORT} | xargs kill -9 2>/dev/null || true
+# ── Servidor HTTP local (somente fora de CI) ─────────────────────────────────
+if [ -n "${CI:-}" ] || [ -n "${SKIP_REPORT_SERVER:-}" ]; then
+  echo "💡 Modo CI/pipeline: pasta pronta em allure-report (sem servidor local)."
+  exit 0
+fi
+
+lsof -ti:"${PORT}" 2>/dev/null | xargs kill -9 2>/dev/null || true
 sleep 0.5
 
-nohup python3 -m http.server ${PORT} --directory "$output_folder" \
+nohup python3 -m http.server "${PORT}" --directory "$output_folder" \
   > /tmp/allure-server.log 2>&1 &
 
 sleep 1
-echo "🌐 Abrindo report em http://localhost:${PORT}"
-open "http://localhost:${PORT}"
-echo "💡 Servidor rodando em background (porta ${PORT}). Para parar: lsof -ti:${PORT} | xargs kill -9"
+echo "🌐 Report em http://localhost:${PORT}"
+if command -v open >/dev/null 2>&1; then
+  open "http://localhost:${PORT}"
+elif command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "http://localhost:${PORT}" || true
+fi
+echo "💡 Para parar: lsof -ti:${PORT} | xargs kill -9"

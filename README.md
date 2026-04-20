@@ -81,6 +81,17 @@ Dados de teste: `config.py`.
 
 ---
 
+## 5. GitHub Actions (mesmo fluxo que no local)
+
+O workflow [`.github/workflows/e2e-allure.yml`](.github/workflows/e2e-allure.yml) roda em **push/PR** para `main` ou `master` (e pode ser disparado manualmente em **Actions → E2E e Allure → Run workflow**):
+
+1. `pytest -v --headed=false --alluredir=allure-results`
+2. `bash allure-custom/report.sh` (com `CI=true` no runner: gera `allure-report/` com CSS/logo, **sem** servidor nem `open`)
+
+No fim, baixe o artefato **`allure-report`** na execução do workflow, descompacte e abra `index.html` no navegador (ou sirva a pasta com um HTTP estático). A versão do Allure no CI está em `env.ALLURE_VERSION` no YAML.
+
+---
+
 ## Pastas úteis
 
 | Pasta | Conteúdo |

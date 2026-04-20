@@ -1,0 +1,66 @@
+# Testes E2E + relatório Allure com o mesmo fluxo local (pytest → allure-custom/report.sh)
+name: E2E e Allure
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  ALLURE_VERSION: "2.30.0"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Playwright (Chromium + deps do sistema)
+        run: python -m playwright install --with-deps chromium
+
+      - name: Allure CLI
+        run: |
+          set -eux
+          curl -sL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" \
+            | tar -xz -C "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/allure-${ALLURE_VERSION}/bin" >> "${GITHUB_PATH}"
+          allure --version
+
+      - name: Rodar testes
+        run: pytest -v --headed=false --alluredir=allure-results
+
+      - name: Gerar relatório (mesmo script que no local)
+        if: always()
+        run: bash allure-custom/report.sh
+
+      - name: Upload do relatório HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 14
+
+      - name: Upload dos resultados brutos (opcional)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results/
+          retention-days: 7
