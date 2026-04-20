@@ -4,7 +4,7 @@ import uuid
 import config
 from pytest_bdd import given, scenarios, then, when
 
-scenarios("fluxo_compras_completo.feature")
+scenarios("fluxo_compras_outline.feature")
 
 
 @given("o usuario acessa a pagina de cadastro")
