@@ -1,4 +1,4 @@
-# Testes E2E + relatório Allure com o mesmo fluxo local (pytest → allure-custom/report.sh)
+# Testes E2E + relatório Allure com histórico de tendências
 name: E2E e Allure
 
 on:
@@ -15,10 +15,17 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Clonar branch gh-pages (histórico Allure)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/ci-clone-gh-pages.sh
 
       - name: Java (Allure CLI precisa de JRE)
         uses: actions/setup-java@v5
@@ -47,20 +54,21 @@ jobs:
             | tar -xz -C "${RUNNER_TEMP}"
           ALLURE_BIN="${RUNNER_TEMP}/allure-${ALLURE_VERSION}/bin"
           echo "${ALLURE_BIN}" >> "${GITHUB_PATH}"
-          # GITHUB_PATH só vale no *próximo* step; aqui precisamos exportar no mesmo job
           echo "PATH=${ALLURE_BIN}:${PATH}" >> "${GITHUB_ENV}"
           "${ALLURE_BIN}/allure" --version
 
-      # Sem --headed: o pytest-playwright só aceita a flag --headed (não existe --headed=false).
-      # O pytest.ini força --headed para uso local; aqui sobrescrevemos addopts para CI (headless).
       - name: Rodar testes
         run: python -m pytest -v -o addopts="--alluredir=allure-results"
+
+      - name: Restaurar histórico Allure
+        if: always()
+        run: bash scripts/restore-allure-history.sh
 
       - name: Gerar relatório (mesmo script que no local)
         if: always()
         run: bash allure-custom/report.sh
 
-      - name: Upload do relatório HTML
+      - name: Upload do relatório HTML (ZIP para download)
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -77,3 +85,57 @@ jobs:
           path: allure-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  # Publica o allure-report em uma URL (só push em main/master — PR continua só com ZIP).
+  publish-pages:
+    name: Publicar relatório no GitHub Pages
+    concurrency:
+      group: github-pages-allure
+      cancel-in-progress: false
+    needs: e2e
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Baixar allure-report gerado no job anterior
+        id: dl
+        uses: actions/download-artifact@v8
+        with:
+          name: allure-report
+          path: _site
+          if-no-files-found: warn
+
+      - name: Checar se há index.html
+        id: ok
+        run: |
+          if [ -f _site/index.html ]; then
+            echo "deploy=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=0" >> "$GITHUB_OUTPUT"
+            echo "::notice::Sem allure-report para publicar (baixe o artefato na aba Summary se existir)."
+          fi
+
+      - name: Configurar GitHub Pages
+        if: steps.ok.outputs.deploy == '1'
+        uses: actions/configure-pages@v5
+
+      - name: Preparar artefato para Pages
+        if: steps.ok.outputs.deploy == '1'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Publicar site
+        if: steps.ok.outputs.deploy == '1'
+        id: deploy
+        uses: actions/deploy-pages@v5

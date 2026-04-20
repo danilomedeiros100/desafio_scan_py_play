@@ -83,12 +83,31 @@ Dados de teste: `config.py`.
 
 ## 5. GitHub Actions (mesmo fluxo que no local)
 
-O workflow [`.github/workflows/e2e-allure.yml`](.github/workflows/e2e-allure.yml) roda em **push/PR** para `main` ou `master` (e pode ser disparado manualmente em **Actions → E2E e Allure → Run workflow**):
+O workflow [`.github/workflows/e2e-allure.yml`](.github/workflows/e2e-allure.yml) roda em **push/PR** para `main` ou `master` (e **Run workflow** manual):
 
-1. `python -m pytest -v -o addopts="--alluredir=allure-results"` (sem `--headed` do `pytest.ini`: no CI o browser roda headless)
-2. `bash allure-custom/report.sh` (com `CI=true` no runner: gera `allure-report/` com CSS/logo, **sem** servidor nem `open`)
+1. `python -m pytest -v -o addopts="--alluredir=allure-results"`
+2. `bash allure-custom/report.sh` (no runner: gera `allure-report/` com CSS/logo; **não** abre navegador)
 
-No fim, baixe o artefato **`allure-report`** na execução do workflow, descompacte e abra `index.html` no navegador (ou sirva a pasta com um HTTP estático). A versão do Allure no CI está em `env.ALLURE_VERSION` no YAML.
+**Por que o relatório não “abre sozinho”?** No GitHub Actions não existe o equivalente ao `open`/`localhost` da sua máquina. Você vê o resultado de um destes jeitos:
+
+### A) ZIP do artefato (sempre disponível na execução)
+
+1. Abra a execução em **Actions** → clique no workflow **E2E e Allure**.
+2. Role até **Artifacts** → baixe **`allure-report`**.
+3. Extraia o ZIP. O Allure costuma funcionar melhor por HTTP do que com `file://`:
+   - **PowerShell** na pasta extraída: `python -m http.server 8765`
+   - No navegador: `http://localhost:8765`
+
+### B) URL fixa no GitHub Pages (após configurar uma vez)
+
+Em **push** para `main` ou `master`, o job **Publicar relatório no GitHub Pages** publica o mesmo conteúdo do artefato.
+
+1. No repositório: **Settings** → **Pages** → **Build and deployment** → **Source: GitHub Actions**.
+2. Após o próximo push na `main`, na execução do workflow aparece o link do ambiente **github-pages** (ou use a URL padrão `https://<usuario>.github.io/<nome-do-repo>/`, conforme o tipo do repositório).
+
+**Pull requests** não disparam a publicação no Pages (só o ZIP em **Artifacts**).
+
+A versão do Allure no CI está em `env.ALLURE_VERSION` no YAML.
 
 ---
 

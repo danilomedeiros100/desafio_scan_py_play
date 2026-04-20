@@ -1,0 +1,18 @@
+{
+  "login": {
+    "valid": {
+      "email": "eve.holt@reqres.in",
+      "password": "cityslicka"
+    },
+    "invalid": {
+      "email": "peter@klaven.com"
+    }
+  },
+  "post": {
+    "valid": {
+      "title": "Teste de criação de post",
+      "body": "Conteúdo do post criado via automação",
+      "userId": 1
+    }
+  }
+}
