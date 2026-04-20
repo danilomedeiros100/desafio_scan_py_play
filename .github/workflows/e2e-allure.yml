@@ -51,8 +51,10 @@ jobs:
           echo "PATH=${ALLURE_BIN}:${PATH}" >> "${GITHUB_ENV}"
           "${ALLURE_BIN}/allure" --version
 
+      # Sem --headed: o pytest-playwright só aceita a flag --headed (não existe --headed=false).
+      # O pytest.ini força --headed para uso local; aqui sobrescrevemos addopts para CI (headless).
       - name: Rodar testes
-        run: python -m pytest -v --headed=false --alluredir=allure-results
+        run: python -m pytest -v -o addopts="--alluredir=allure-results"
 
       - name: Gerar relatório (mesmo script que no local)
         if: always()

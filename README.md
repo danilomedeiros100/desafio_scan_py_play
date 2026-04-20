@@ -63,8 +63,8 @@ Esse script roda `allure generate`, aplica CSS/logo do `allure-custom`, sobe um 
 ## 4. Outros comandos úteis
 
 ```powershell
-# Headless
-pytest -v --headed=false --alluredir=allure-results
+# Headless (o plugin não aceita --headed=false; tire o --headed do pytest.ini só nesta execução)
+pytest -v -o addopts="--alluredir=allure-results"
 
 # Só um arquivo de teste
 pytest tests\test_fluxo_compras_completo.py -v --alluredir=allure-results
@@ -85,7 +85,7 @@ Dados de teste: `config.py`.
 
 O workflow [`.github/workflows/e2e-allure.yml`](.github/workflows/e2e-allure.yml) roda em **push/PR** para `main` ou `master` (e pode ser disparado manualmente em **Actions → E2E e Allure → Run workflow**):
 
-1. `pytest -v --headed=false --alluredir=allure-results`
+1. `python -m pytest -v -o addopts="--alluredir=allure-results"` (sem `--headed` do `pytest.ini`: no CI o browser roda headless)
 2. `bash allure-custom/report.sh` (com `CI=true` no runner: gera `allure-report/` com CSS/logo, **sem** servidor nem `open`)
 
 No fim, baixe o artefato **`allure-report`** na execução do workflow, descompacte e abra `index.html` no navegador (ou sirva a pasta com um HTTP estático). A versão do Allure no CI está em `env.ALLURE_VERSION` no YAML.
