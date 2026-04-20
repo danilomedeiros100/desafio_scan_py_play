@@ -49,7 +49,19 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+.pytest_tmp/
 cover/
+
+# Pytest — saídas opcionais (junit, debug)
+junit*.xml
+report.xml
+pytestdebug.log
+
+# Playwright (pytest-playwright / traces e relatórios locais)
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # Translations
 *.mo
@@ -168,12 +180,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# PyCharm / JetBrains
+.idea/
+*.iml
+out/
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
@@ -182,11 +192,8 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/
+*.code-workspace
 
 # Ruff stuff:
 .ruff_cache/
@@ -194,14 +201,20 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
+# Cursor — ignora o restante de .cursor/, mas permite versionar regras do projeto
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Marimo
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Allure (resultados brutos e relatório HTML gerados localmente)
+allure-results/
+allure-report/
+
+# Claude Code — instruções e estado local do assistente
+CLAUDE.md
+.claude/
