@@ -68,12 +68,30 @@ jobs:
         if: always()
         run: bash allure-custom/report.sh
 
-      - name: Upload do relatório HTML (ZIP para download)
+      - name: Painel de histórico (10 dias) + site para Pages
+        if: always()
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/build_dashboard.py \
+            --allure-results allure-results \
+            --previous-history gh-pages-prev/dashboard-history.json \
+            --out-dir publish-site \
+            --keep-days 10 \
+            --allure-href allure/index.html
+          if [ -d allure-report ]; then
+            rm -rf publish-site/allure
+            mv allure-report publish-site/allure
+          fi
+
+      - name: Upload do site (painel + Allure) para download
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: allure-report
-          path: allure-report/
+          path: publish-site/
           if-no-files-found: warn
           retention-days: 14
 

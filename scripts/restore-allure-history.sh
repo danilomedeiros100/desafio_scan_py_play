@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
-# Copia a pasta history do relatório anterior (gh-pages-prev/) para allure-results/history/
-# antes do `allure generate`, ativando gráficos de tendência no relatório.
+# Copia history do relatório Allure publicado antes do `allure generate` (tendências no HTML).
+# Layout novo: gh-pages-prev/allure/history — legado: gh-pages-prev/history
 set -euo pipefail
 
-SRC="${ALLURE_HISTORY_SOURCE:-gh-pages-prev/history}"
 DST="allure-results/history"
 
-if [[ ! -d "$SRC" ]]; then
-  echo "[restore-allure-history] Origem inexistente: $SRC — ignorando (primeira execução ou gh-pages ausente)."
+pick_src() {
+  if [[ -d gh-pages-prev/allure/history ]]; then
+    echo "gh-pages-prev/allure/history"
+  elif [[ -d gh-pages-prev/history ]]; then
+    echo "gh-pages-prev/history"
+  else
+    echo ""
+  fi
+}
+
+SRC="$(pick_src)"
+
+if [[ -z "$SRC" ]]; then
+  echo "[restore-allure-history] Nenhuma pasta history encontrada — primeira publicação ou gh-pages ausente."
   exit 0
 fi
 

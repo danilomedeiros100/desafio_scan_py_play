@@ -63,9 +63,11 @@ O workflow [`.github/workflows/e2e-allure.yml`](.github/workflows/e2e-allure.yml
 
 | Opção | Como acessar |
 |---|---|
-| Relatório publicado | [danilomedeiros100.github.io/desafio_scan_py_play](https://danilomedeiros100.github.io/desafio_scan_py_play/) — atualizado a cada push na `main` |
-| Download ZIP | Na execução em **Actions** → seção **Artifacts** → `allure-report` |
-| Resultados brutos | Disponível em **Artifacts** → `allure-results` apenas em execuções com falha |
+| Site publicado | [danilomedeiros100.github.io/desafio_scan_py_play](https://danilomedeiros100.github.io/desafio_scan_py_play/) — **página inicial** com painel dos **últimos 10 dias** (execuções, totais, taxa média de sucesso, tabela por run) e link para o Allure da última publicação em **`/allure/`** |
+| Download ZIP | Na execução em **Actions** → **Artifacts** → `allure-report` (pasta completa: painel + `allure/`) |
+| Resultados brutos | **Artifacts** → `allure-results` só quando o job falha |
+
+O painel lê os `*-result.json` de cada execução e persiste `dashboard-history.json` na branch publicada (via clone de `gh-pages` no CI), sempre limitando à janela de 10 dias.
 
 > Para ativar o GitHub Pages: **Settings → Pages → Source: GitHub Actions**.
 
@@ -79,5 +81,5 @@ tests/      # Steps pytest-bdd
 pages/      # Page Objects
 config.py   # Dados de teste (usuários, senha padrão)
 allure-custom/report.sh  # Gera relatório com tema customizado
-scripts/    # Scripts auxiliares de CI (histórico Allure)
+scripts/    # CI: histórico Allure, painel (`build_dashboard.py`)
 ```
